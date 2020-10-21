@@ -16,10 +16,10 @@ x = np.zeros(dim + 1).reshape(dim + 1, 1)
 b = np.dot(xT, y)
 ri = b - np.dot(A, x)  # 残差
 di = np.copy(ri)
-
+lamb = 0.00000000001
 for i in range(times):
     alphai = np.sum(np.dot(np.transpose(ri), ri) / np.dot(np.dot(np.transpose(di), A), di))
-    xi1 = x + alphai * di
+    xi1 = (1 - alphai * lamb) * x+ alphai * di
     ri1 = ri - alphai * np.dot(A, di)
     betai1 = np.dot(np.transpose(ri1), ri1) / np.dot(np.transpose(ri), ri)
     di1 = ri1 + betai1 * di
