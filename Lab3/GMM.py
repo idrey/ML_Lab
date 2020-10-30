@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import datagen as dg
 
 
 def init_params(k, dim):
@@ -23,7 +24,7 @@ def calc_resp_molecular(pi, x, means, var):
     resp_molecular = np.empty((n, k))
     for i in range(n):
         for j in range(k):
-            resp_molecular[i][j] = pi[j][0] * calc_prob(x[i], means[k], var[k])
+            resp_molecular[i][j] = pi[j][0] * calc_prob(x[i], means[j], var[j])
 
     return resp_molecular
 
@@ -51,14 +52,14 @@ def update_params(x, resp, N):
     #     for l in range(n):
     #         new_means[k] = new_means[k] + resp[l][k] * x[l]
     for j in range(k):
-        new_means[k] = np.dot(resp[:, k].reshape(1, n), x)
+        new_means[j] = np.dot(resp[:, j].reshape(1, n), x)
     new_means = new_means / N
     new_var = np.empty((k, dim, dim))
 
     for j in range(k):
         x_minus_means = x - new_means[j]
-        x_minus_meanst = np.transpose(x_minus_means)
-        new_var[j] = np.dot(resp[:, j] * x_minus_meanst, x_minus_means) / N[j]
+        x_minus_means_t = np.transpose(x_minus_means)
+        new_var[j] = np.dot(resp[:, j] * x_minus_means_t, x_minus_means) / N[j]
     new_pi = N / k
     return new_means, new_var, new_pi
 
@@ -67,19 +68,27 @@ def em(x, k):
     data_size, dim = x.shape
     means, var, pi = init_params(k, dim)
     pre_log_lld = 5
+    resp = np.empty((data_size, k))
     for i in range(1000):
         resp_molecular = calc_resp_molecular(pi, x, means, var)
         log_lld = np.sum(np.log(np.sum(resp_molecular, axis=1)))
         if np.abs(log_lld - pre_log_lld) < 1e-10:
             print("converged")
+            break
         pre_log_lld = log_lld
-        resp = np.empty((data_size, k))
         for j in range(data_size):
             resp[j] = resp_molecular[j] / np.sum(resp_molecular[j])
         N = np.sum(resp, axis=0).reshape(k, 1)
+        means, var, pi = update_params(x, resp, N)
+    cluster = np.argmax(resp, axis=1)
+    return cluster
 
 
 if __name__ == '__main__':
-    var = np.array(np.identity(2))
-    revise_var(var)
-    print(var)
+    x, k = dg.getdata()
+    cluster = em(x, k)
+    color = ['r', 'b', 'y']
+    for i in range(x.shape[0]):
+        plt.scatter(x[i, 0], x[i, 1], marker='.', color=color[cluster[i]])
+    plt.show()
+
