@@ -4,7 +4,8 @@ import datagen as dg
 
 
 def init_params(k, dim):
-    means = np.random.randint(-5, 15, size=(k, dim))
+    # means = np.random.randint(-5, 15, size=(k, dim))
+    means = np.random.rand(k, dim).reshape(k, dim)
     var = np.array([np.identity(dim)] * k)
     pi = np.ones((k, 1)) * (1.0 / k)
     return means, var, pi
@@ -12,7 +13,7 @@ def init_params(k, dim):
 
 def revise_var(var_k):
     dim = var_k.shape[0]
-    delta = 1e-6
+    delta = 1e-8
     for i in range(dim):
         var_k[i][i] = var_k[i][i] + delta
     return var_k
@@ -67,12 +68,18 @@ def update_params(x, resp, N):
 def em(x, k):
     data_size, dim = x.shape
     means, var, pi = init_params(k, dim)
-    pre_log_lld = 5
+    pre_log_lld = 1e9
     resp = np.empty((data_size, k))
+    t = 0
     for i in range(1000):
         resp_molecular = calc_resp_molecular(pi, x, means, var)
         log_lld = np.sum(np.log(np.sum(resp_molecular, axis=1)))
+        print(log_lld)
         if np.abs(log_lld - pre_log_lld) < 1e-10:
+            t += 1
+        else:
+            t = 0
+        if t == 10:
             print("converged")
             break
         pre_log_lld = log_lld
